@@ -26,8 +26,8 @@ def draw_board(board):
             pygame.draw.circle(screen, color, (c * CELL_SIZE + CELL_SIZE // 2, r * CELL_SIZE + CELL_SIZE // 2), 40)
     pygame.display.flip()
 
-model1 = PPO.load("models/connect4_ppo_step100000")
-model2 = PPO.load("models/latest_opponent")  
+model1 = PPO.load("models/connect4_PPO")
+model2 = PPO.load("models/connect4_PPO")  
 
 score1, score2 = 0, 0
 

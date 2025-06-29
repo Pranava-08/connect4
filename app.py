@@ -7,7 +7,7 @@ from env import Connect4Env
 app = Flask(__name__, static_folder='static')
 
 # Load model
-model = DQN.load(r"C:\Users\DSF20\Documents\Codes\projects\RL\connect4\models\connect4_DQN.zip")
+model = DQN.load("models\connect4_DQN.zip")
 env = Connect4Env()
 
 @app.route("/")
