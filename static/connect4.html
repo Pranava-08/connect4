@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Connect4: Play with AI or Friend</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #222;
+        color: white;
+        text-align: center;
+      }
+
+      #mode-select {
+        margin-top: 20px;
+      }
+
+      table {
+        margin: auto;
+        border-spacing: 10px;
+        background-color: #0066cc;
+        border-radius: 10px;
+        padding: 10px;
+      }
+
+      td {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background-color: white;
+        box-shadow: inset 0 0 10px #000;
+        transition: background-color 0.2s;
+        cursor: pointer;
+      }
+
+      .player1 {
+        background-color: red !important;
+      }
+      .player2 {
+        background-color: yellow !important;
+      }
+
+      #status {
+        margin-top: 20px;
+        font-size: 24px;
+      }
+
+      #restart {
+        margin-top: 15px;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Connect 4</h1>
+
+    <div id="mode-select">
+      <button onclick="startGame('ai')">Play vs AI 🤖</button>
+      <button onclick="startGame('friend')">Play vs Friend 👥</button>
+    </div>
+
+    <p id="status">Choose a game mode</p>
+    <table id="board"></table>
+    <button id="restart" style="display: none" onclick="location.reload()">
+      Restart Game
+    </button>
+
+    <script>
+      const rows = 6,
+        cols = 7;
+      let board = Array.from({ length: rows }, () => Array(cols).fill(0));
+      let currentPlayer = 1;
+      let mode = null;
+      let gameOver = false;
+
+      function startGame(selectedMode) {
+        mode = selectedMode;
+        document.getElementById("mode-select").style.display = "none";
+        document.getElementById("restart").style.display = "inline-block";
+        document.getElementById("status").textContent = "Player 1's turn";
+        renderBoard();
+      }
+
+      function renderBoard() {
+        const table = document.getElementById("board");
+        table.innerHTML = "";
+        for (let r = 0; r < rows; r++) {
+          const row = table.insertRow();
+          for (let c = 0; c < cols; c++) {
+            const cell = row.insertCell();
+            const val = board[r][c];
+            if (val === 1) cell.classList.add("player1");
+            else if (val === 2) cell.classList.add("player2");
+            cell.onclick = () => handleMove(c);
+          }
+        }
+      }
+
+      function handleMove(col) {
+        if (mode === "ai") {
+          handleMoveAI(col);
+        } else if (mode === "friend") {
+          handleMoveFriend(col);
+        }
+      }
+      function handleMoveAI(col) {
+        if (gameOver || currentPlayer !== 1) return;
+
+        document.getElementById("status").textContent = "AI is thinking... 🤖";
+        fetch("/move", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ board, player_action: col }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.error) {
+              document.getElementById("status").textContent = data.error;
+              return;
+            }
+
+            board = data.board;
+            renderBoard();
+
+            if (data.winner) {
+              const winner =
+                data.winner === "player"
+                  ? "You win! 🎉"
+                  : data.winner === "computer"
+                  ? "AI wins! 🤖"
+                  : "It's a draw! 🤝";
+              endGame(winner);
+            } else {
+              document.getElementById("status").textContent = "Your move.";
+            }
+          });
+      }
+      function handleMoveFriend(col) {
+        if (gameOver) return;
+
+        const row = [...Array(rows).keys()]
+          .reverse()
+          .find((r) => board[r][col] === 0);
+        if (row === undefined) return;
+
+        board[row][col] = currentPlayer;
+        renderBoard();
+
+        if (checkWinner(currentPlayer)) {
+          endGame(`Player ${currentPlayer} wins! 🎉`);
+        } else if (isBoardFull()) {
+          endGame("It's a draw! 🤝");
+        } else {
+          currentPlayer = 3 - currentPlayer;
+          document.getElementById(
+            "status"
+          ).textContent = `Player ${currentPlayer}'s turn`;
+        }
+      }
+
+      function endGame(message) {
+        gameOver = true;
+        document.getElementById("status").textContent = message;
+      }
+
+      function isBoardFull() {
+        return board[0].every((cell) => cell !== 0);
+      }
+
+      function checkWinner(player) {
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols - 3; c++) {
+            if (
+              board[r][c] === player &&
+              board[r][c + 1] === player &&
+              board[r][c + 2] === player &&
+              board[r][c + 3] === player
+            )
+              return true;
+          }
+        }
+        for (let c = 0; c < cols; c++) {
+          for (let r = 0; r < rows - 3; r++) {
+            if (
+              board[r][c] === player &&
+              board[r + 1][c] === player &&
+              board[r + 2][c] === player &&
+              board[r + 3][c] === player
+            )
+              return true;
+          }
+        }
+        for (let r = 0; r < rows - 3; r++) {
+          for (let c = 0; c < cols - 3; c++) {
+            if (
+              board[r][c] === player &&
+              board[r + 1][c + 1] === player &&
+              board[r + 2][c + 2] === player &&
+              board[r + 3][c + 3] === player
+            )
+              return true;
+          }
+        }
+        for (let r = 3; r < rows; r++) {
+          for (let c = 0; c < cols - 3; c++) {
+            if (
+              board[r][c] === player &&
+              board[r - 1][c + 1] === player &&
+              board[r - 2][c + 2] === player &&
+              board[r - 3][c + 3] === player
+            )
+              return true;
+          }
+        }
+        return false;
+      }
+    </script>
+  </body>
+</html>
