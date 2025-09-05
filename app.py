@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, send_from_directory
-from stable_baselines3 import DQN
+from stable_baselines3 import DQN,PPO
 import numpy as np
 from env import Connect4Env
 
@@ -7,7 +7,8 @@ from env import Connect4Env
 app = Flask(__name__, static_folder='static')
 
 # Load model
-model = DQN.load("models\connect4_DQN.zip")
+model_ezee = DQN.load("models\DQN_model_1.zip")
+model_hard = DQN.load("models\DQN_model_3.zip")
 env = Connect4Env()
 
 @app.route("/")
@@ -19,6 +20,7 @@ def make_move():
     data = request.json
     board = np.array(data["board"], dtype=np.int8)
     action = data["player_action"]
+    ai_mode = data.get("ai_mode", "ai_easy")  # Default to easy if not provided
 
     env.board = board.copy()
     env.current_player = 1
@@ -41,6 +43,11 @@ def make_move():
         })
 
     # AI move
+    if ai_mode == "ai_easy":
+        model = model_ezee
+    else:
+        model = model_hard
+
     ai_action, _ = model.predict(obs, deterministic=True)
     obs, reward, done, info = env.step(ai_action)
 

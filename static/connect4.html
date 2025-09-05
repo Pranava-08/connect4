@@ -56,8 +56,12 @@
     <h1>Connect 4</h1>
 
     <div id="mode-select">
-      <button onclick="startGame('ai')">Play vs AI 🤖</button>
+      <button onclick="chooseAIMode()">Play vs AI 🤖</button>
       <button onclick="startGame('friend')">Play vs Friend 👥</button>
+    </div>
+    <div id="ai-mode-select" style="display: none; margin-top: 15px">
+      <button onclick="startGame('ai_easy')">Easy 😇</button>
+      <button onclick="startGame('ai_hard')">Hard 😈</button>
     </div>
 
     <p id="status">Choose a game mode</p>
@@ -74,11 +78,18 @@
       let mode = null;
       let gameOver = false;
 
-      function startGame(selectedMode) {
-        mode = selectedMode;
+      function chooseAIMode() {
         document.getElementById("mode-select").style.display = "none";
+        document.getElementById("ai-mode-select").style.display = "block";
+      }
+
+      function startGame(selectedMode) {
+        mode = selectedMode; // mode will be 'friend', 'ai_easy', or 'ai_hard'
+        document.getElementById("mode-select").style.display = "none";
+        document.getElementById("ai-mode-select").style.display = "none";
         document.getElementById("restart").style.display = "inline-block";
-        document.getElementById("status").textContent = "Player 1's turn";
+        document.getElementById("status").textContent =
+          mode === "friend" ? "Player 1's turn" : "Player 1's turn";
         renderBoard();
       }
 
@@ -96,22 +107,21 @@
           }
         }
       }
-
       function handleMove(col) {
-        if (mode === "ai") {
+        if (mode === "ai_easy" || mode === "ai_hard") {
           handleMoveAI(col);
         } else if (mode === "friend") {
           handleMoveFriend(col);
         }
       }
+
       function handleMoveAI(col) {
         if (gameOver || currentPlayer !== 1) return;
-
         document.getElementById("status").textContent = "AI is thinking... 🤖";
         fetch("/move", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ board, player_action: col }),
+          body: JSON.stringify({ board, player_action: col, ai_mode: mode }),
         })
           .then((res) => res.json())
           .then((data) => {
@@ -119,10 +129,8 @@
               document.getElementById("status").textContent = data.error;
               return;
             }
-
             board = data.board;
             renderBoard();
-
             if (data.winner) {
               const winner =
                 data.winner === "player"
@@ -136,6 +144,7 @@
             }
           });
       }
+
       function handleMoveFriend(col) {
         if (gameOver) return;
 
